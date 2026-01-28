@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Turfs - TurfHub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">TurfHub</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="turfs.html" class="active">Browse Turfs</a></li>
+                    <li><a href="my-bookings.html">My Bookings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="listing-hero">
+        <div class="container">
+            <h1 class="page-title">Explore All Turfs</h1>
+            <p class="page-subtitle">Find the perfect venue for your game</p>
+        </div>
+    </section>
+
+    <section class="listing-section">
+        <div class="container">
+            <div class="listing-layout">
+                <aside class="filters-sidebar">
+                    <h3 class="filter-title">Filters</h3>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">Search Turf</label>
+                        <input type="text" id="turfNameSearch" placeholder="Search by name..." class="filter-input">
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Sport</label>
+                        <select id="sportFilter" class="filter-select">
+                            <option value="">All Sports</option>
+                            <option value="Cricket">Cricket</option>
+                            <option value="Football">Football</option>
+                            <option value="Badminton">Badminton</option>
+                            <option value="Tennis">Tennis</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Price Range</label>
+                        <select id="priceFilter" class="filter-select">
+                            <option value="">All Prices</option>
+                            <option value="0-500">₹0 - ₹500</option>
+                            <option value="500-1000">₹500 - ₹1000</option>
+                            <option value="1000-1500">₹1000 - ₹1500</option>
+                            <option value="1500+">₹1500+</option>
+                        </select>
+                    </div>
+
+                    <button class="clear-filters-btn" id="clearFilters">Clear All Filters</button>
+                </aside>
+
+                <div class="listing-main">
+                    <div class="listing-header">
+                        <p class="results-count" id="resultsCount">Loading...</p>
+                    </div>
+                    <div class="turfs-grid" id="turfsListing"></div>
+                    <div class="no-results" id="noResults" style="display: none;">
+                        <div class="no-results-icon">🔍</div>
+                        <h3>No turfs found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 TurfHub. Book your game, play your heart out.</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        let filteredTurfs = [...turfsData];
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('turfNameSearch').value.toLowerCase();
+            const sportFilter = document.getElementById('sportFilter').value;
+            const priceFilter = document.getElementById('priceFilter').value;
+
+            filteredTurfs = turfsData.filter(turf => {
+                // Name search
+                const matchesName = turf.name.toLowerCase().includes(searchTerm);
+                
+                // Sport filter
+                const matchesSport = !sportFilter || turf.sports.includes(sportFilter);
+                
+                // Price filter
+                let matchesPrice = true;
+                if (priceFilter) {
+                    if (priceFilter === '0-500') {
+                        matchesPrice = turf.pricePerHour <= 500;
+                    } else if (priceFilter === '500-1000') {
+                        matchesPrice = turf.pricePerHour > 500 && turf.pricePerHour <= 1000;
+                    } else if (priceFilter === '1000-1500') {
+                        matchesPrice = turf.pricePerHour > 1000 && turf.pricePerHour <= 1500;
+                    } else if (priceFilter === '1500+') {
+                        matchesPrice = turf.pricePerHour > 1500;
+                    }
+                }
+                
+                return matchesName && matchesSport && matchesPrice;
+            });
+
+            renderTurfs();
+        }
+
+        function renderTurfs() {
+            const container = document.getElementById('turfsListing');
+            const noResults = document.getElementById('noResults');
+            const resultsCount = document.getElementById('resultsCount');
+
+            resultsCount.textContent = `${filteredTurfs.length} turf${filteredTurfs.length !== 1 ? 's' : ''} found`;
+
+            if (filteredTurfs.length === 0) {
+                container.style.display = 'none';
+                noResults.style.display = 'flex';
+            } else {
+                container.style.display = 'grid';
+                noResults.style.display = 'none';
+                
+                container.innerHTML = filteredTurfs.map((turf, index) => `
+                    <div class="turf-card" style="animation-delay: ${index * 0.05}s">
+                        <div class="turf-image" style="background-image: url('${turf.image}')"></div>
+                        <div class="turf-content">
+                            <h3 class="turf-name">${turf.name}</h3>
+                            <p class="turf-location">📍 ${turf.location}</p>
+                            <div class="turf-sports">
+                                ${turf.sports.map(sport => `<span class="sport-tag">${sport}</span>`).join('')}
+                            </div>
+                            <div class="turf-footer">
+                                <div class="turf-price">₹${turf.pricePerHour}/hr</div>
+                                <a href="turf-details.html?id=${turf.id}" class="book-btn">Book Now</a>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('turfNameSearch').addEventListener('input', applyFilters);
+        document.getElementById('sportFilter').addEventListener('change', applyFilters);
+        document.getElementById('priceFilter').addEventListener('change', applyFilters);
+        
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            document.getElementById('turfNameSearch').value = '';
+            document.getElementById('sportFilter').value = '';
+            document.getElementById('priceFilter').value = '';
+            applyFilters();
+        });
+
+        // Check URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const sportParam = urlParams.get('sport');
+        const locationParam = urlParams.get('location');
+
+        if (sportParam) {
+            const capitalizedSport = sportParam.charAt(0).toUpperCase() + sportParam.slice(1);
+            document.getElementById('sportFilter').value = capitalizedSport;
+        }
+
+        if (locationParam) {
+            document.getElementById('turfNameSearch').value = locationParam;
+        }
+
+        applyFilters();
+    </script>
+</body>
+</html>

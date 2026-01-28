@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - TurfHub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">TurfHub</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="turfs.html">Browse Turfs</a></li>
+                    <li><a href="my-bookings.html" class="active">My Bookings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="bookings-section">
+        <div class="container">
+            <h1 class="page-title">My Bookings</h1>
+            <p class="page-subtitle">Manage all your turf bookings</p>
+
+            <div class="bookings-container" id="bookingsContainer">
+                <!-- Bookings will be rendered here -->
+            </div>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📋</div>
+                <h2>No Bookings Yet</h2>
+                <p>You haven't made any bookings. Start exploring turfs!</p>
+                <a href="turfs.html" class="explore-btn">Explore Turfs</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cancel Modal -->
+    <div class="modal" id="cancelModal">
+        <div class="modal-content">
+            <h2>Cancel Booking?</h2>
+            <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" id="cancelModalClose">Keep Booking</button>
+                <button class="modal-btn modal-btn-danger" id="confirmCancel">Yes, Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 TurfHub. Book your game, play your heart out.</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        let bookingToCancel = null;
+
+        function renderBookings() {
+            const bookings = getAllBookings();
+            const container = document.getElementById('bookingsContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (bookings.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            // Sort bookings by date (most recent first)
+            bookings.sort((a, b) => new Date(b.bookedAt) - new Date(a.bookedAt));
+
+            container.innerHTML = bookings.map((booking, index) => {
+                const bookingDate = new Date(booking.date);
+                const isPast = bookingDate < new Date();
+                
+                return `
+                    <div class="booking-card-item" style="animation-delay: ${index * 0.05}s">
+                        <div class="booking-card-header">
+                            <h3 class="booking-turf-name">${booking.turfName}</h3>
+                            <span class="booking-status ${isPast ? 'status-completed' : 'status-upcoming'}">
+                                ${isPast ? '✓ Completed' : '⏰ Upcoming'}
+                            </span>
+                        </div>
+                        
+                        <div class="booking-card-body">
+                            <div class="booking-info-grid">
+                                <div class="booking-info-item">
+                                    <span class="info-label">📅 Date</span>
+                                    <span class="info-value">${bookingDate.toLocaleDateString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    })}</span>
+                                </div>
+                                
+                                <div class="booking-info-item">
+                                    <span class="info-label">⏰ Time</span>
+                                    <span class="info-value">${booking.time}</span>
+                                </div>
+                                
+                                <div class="booking-info-item">
+                                    <span class="info-label">⏱️ Duration</span>
+                                    <span class="info-value">${booking.duration} hour${booking.duration > 1 ? 's' : ''}</span>
+                                </div>
+                                
+                                <div class="booking-info-item">
+                                    <span class="info-label">💰 Total</span>
+                                    <span class="info-value">₹${booking.totalAmount}</span>
+                                </div>
+                            </div>
+
+                            <div class="booking-user-info">
+                                <div><strong>Name:</strong> ${booking.userName}</div>
+                                <div><strong>Phone:</strong> ${booking.userPhone}</div>
+                                ${booking.userEmail ? `<div><strong>Email:</strong> ${booking.userEmail}</div>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="booking-card-footer">
+                            <span class="booking-id">Booking ID: #${booking.id}</span>
+                            ${!isPast ? `<button class="cancel-booking-btn" data-id="${booking.id}">Cancel Booking</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add cancel button handlers
+            document.querySelectorAll('.cancel-booking-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    bookingToCancel = parseInt(this.dataset.id);
+                    document.getElementById('cancelModal').classList.add('show');
+                });
+            });
+        }
+
+        // Cancel modal handlers
+        document.getElementById('cancelModalClose').addEventListener('click', function() {
+            document.getElementById('cancelModal').classList.remove('show');
+            bookingToCancel = null;
+        });
+
+        document.getElementById('confirmCancel').addEventListener('click', function() {
+            if (bookingToCancel) {
+                deleteBooking(bookingToCancel);
+                document.getElementById('cancelModal').classList.remove('show');
+                bookingToCancel = null;
+                renderBookings();
+            }
+        });
+
+        // Close modal on outside click
+        document.getElementById('cancelModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+                bookingToCancel = null;
+            }
+        });
+
+        // Initialize
+        renderBookings();
+    </script>
+</body>
+</html>

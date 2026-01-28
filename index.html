@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurfHub - Book Your Game</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">TurfHub</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html" class="active">Home</a></li>
+                    <li><a href="turfs.html">Browse Turfs</a></li>
+                    <li><a href="my-bookings.html">My Bookings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Book Your Game
+                    <span class="hero-emoji">🎾⚽🏏</span>
+                </h1>
+                <p class="hero-subtitle">Find the perfect turf for your favorite sport</p>
+                
+                <div class="search-box">
+                    <input type="text" id="locationSearch" placeholder="Search by location..." class="search-input">
+                    <button class="search-btn">🔍 Search</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="sports-categories">
+        <div class="container">
+            <h2 class="section-title">Pick Your Sport</h2>
+            <div class="category-grid">
+                <div class="category-card" data-sport="cricket">
+                    <div class="category-icon">🏏</div>
+                    <h3>Cricket</h3>
+                </div>
+                <div class="category-card" data-sport="football">
+                    <div class="category-icon">⚽</div>
+                    <h3>Football</h3>
+                </div>
+                <div class="category-card" data-sport="badminton">
+                    <div class="category-icon">🏸</div>
+                    <h3>Badminton</h3>
+                </div>
+                <div class="category-card" data-sport="tennis">
+                    <div class="category-icon">🎾</div>
+                    <h3>Tennis</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="popular-turfs">
+        <div class="container">
+            <h2 class="section-title">Popular Turfs Near You</h2>
+            <div class="turfs-grid" id="popularTurfs"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 TurfHub. Book your game, play your heart out.</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        // Render popular turfs
+        function renderPopularTurfs() {
+            const container = document.getElementById('popularTurfs');
+            const popularTurfs = turfsData.slice(0, 6);
+            
+            container.innerHTML = popularTurfs.map(turf => `
+                <div class="turf-card" style="animation-delay: ${Math.random() * 0.3}s">
+                    <div class="turf-image" style="background-image: url('${turf.image}')"></div>
+                    <div class="turf-content">
+                        <h3 class="turf-name">${turf.name}</h3>
+                        <p class="turf-location">📍 ${turf.location}</p>
+                        <div class="turf-sports">
+                            ${turf.sports.map(sport => `<span class="sport-tag">${sport}</span>`).join('')}
+                        </div>
+                        <div class="turf-footer">
+                            <div class="turf-price">₹${turf.pricePerHour}/hr</div>
+                            <a href="turf-details.html?id=${turf.id}" class="book-btn">Book Now</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Category card click handler
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const sport = this.dataset.sport;
+                window.location.href = `turfs.html?sport=${sport}`;
+            });
+        });
+
+        // Location search
+        document.querySelector('.search-btn').addEventListener('click', function() {
+            const location = document.getElementById('locationSearch').value;
+            window.location.href = `turfs.html?location=${encodeURIComponent(location)}`;
+        });
+
+        document.getElementById('locationSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const location = this.value;
+                window.location.href = `turfs.html?location=${encodeURIComponent(location)}`;
+            }
+        });
+
+        renderPopularTurfs();
+    </script>
+</body>
+</html>

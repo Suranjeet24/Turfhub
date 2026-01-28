@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Booking - TurfHub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">TurfHub</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="turfs.html">Browse Turfs</a></li>
+                    <li><a href="my-bookings.html">My Bookings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="booking-section">
+        <div class="container">
+            <div class="booking-layout">
+                <div class="booking-main">
+                    <h1 class="page-title">Complete Your Booking</h1>
+
+                    <div class="booking-details-card">
+                        <h2 class="card-title">Booking Details</h2>
+                        
+                        <div class="detail-row">
+                            <span class="detail-label">Turf Name</span>
+                            <span class="detail-value" id="bookingTurfName">-</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value" id="bookingDate">-</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">Time Slot</span>
+                            <span class="detail-value" id="bookingTime">-</span>
+                        </div>
+
+                        <div class="duration-selector">
+                            <label class="detail-label">Select Duration</label>
+                            <div class="duration-options">
+                                <button class="duration-btn active" data-hours="1">1 Hour</button>
+                                <button class="duration-btn" data-hours="2">2 Hours</button>
+                                <button class="duration-btn" data-hours="3">3 Hours</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="user-info-card">
+                        <h2 class="card-title">Your Information</h2>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="userName" class="form-input" placeholder="Enter your name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" id="userPhone" class="form-input" placeholder="Enter your phone" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Email (Optional)</label>
+                            <input type="email" id="userEmail" class="form-input" placeholder="Enter your email">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="booking-sidebar">
+                    <div class="summary-card">
+                        <h2 class="card-title">Booking Summary</h2>
+                        
+                        <div class="summary-details">
+                            <div class="summary-row">
+                                <span>Price per hour</span>
+                                <span id="summaryPricePerHour">₹0</span>
+                            </div>
+
+                            <div class="summary-row">
+                                <span>Duration</span>
+                                <span id="summaryDuration">1 hour</span>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row summary-total">
+                                <span>Total Amount</span>
+                                <span id="summaryTotalAmount">₹0</span>
+                            </div>
+                        </div>
+
+                        <button class="confirm-booking-btn" id="confirmBooking">
+                            Confirm Booking
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Modal -->
+    <div class="modal" id="successModal">
+        <div class="modal-content success-modal">
+            <div class="success-icon">✅</div>
+            <h2>Booking Confirmed!</h2>
+            <p>Your turf has been successfully booked</p>
+            <div class="modal-actions">
+                <a href="my-bookings.html" class="modal-btn modal-btn-primary">View My Bookings</a>
+                <a href="index.html" class="modal-btn modal-btn-secondary">Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 TurfHub. Book your game, play your heart out.</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        let bookingData = null;
+        let selectedDuration = 1;
+
+        // Get pending booking from session
+        const pendingBooking = sessionStorage.getItem('pendingBooking');
+        
+        if (!pendingBooking) {
+            window.location.href = 'index.html';
+        } else {
+            bookingData = JSON.parse(pendingBooking);
+            loadBookingDetails();
+        }
+
+        function loadBookingDetails() {
+            document.getElementById('bookingTurfName').textContent = bookingData.turfName;
+            
+            const dateObj = new Date(bookingData.date);
+            document.getElementById('bookingDate').textContent = dateObj.toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            document.getElementById('bookingTime').textContent = bookingData.time;
+            
+            updateSummary();
+        }
+
+        function updateSummary() {
+            document.getElementById('summaryPricePerHour').textContent = `₹${bookingData.pricePerHour}`;
+            document.getElementById('summaryDuration').textContent = `${selectedDuration} hour${selectedDuration > 1 ? 's' : ''}`;
+            
+            const totalAmount = bookingData.pricePerHour * selectedDuration;
+            document.getElementById('summaryTotalAmount').textContent = `₹${totalAmount}`;
+        }
+
+        // Duration selection
+        document.querySelectorAll('.duration-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedDuration = parseInt(this.dataset.hours);
+                updateSummary();
+            });
+        });
+
+        // Confirm booking
+        document.getElementById('confirmBooking').addEventListener('click', function() {
+            const userName = document.getElementById('userName').value.trim();
+            const userPhone = document.getElementById('userPhone').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+
+            if (!userName || !userPhone) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            // Create booking object
+            const booking = {
+                id: Date.now(),
+                turfId: bookingData.turfId,
+                turfName: bookingData.turfName,
+                date: bookingData.date,
+                time: bookingData.time,
+                duration: selectedDuration,
+                pricePerHour: bookingData.pricePerHour,
+                totalAmount: bookingData.pricePerHour * selectedDuration,
+                userName: userName,
+                userPhone: userPhone,
+                userEmail: userEmail,
+                bookedAt: new Date().toISOString()
+            };
+
+            // Save booking
+            saveBooking(booking);
+
+            // Clear session
+            sessionStorage.removeItem('pendingBooking');
+
+            // Show success modal
+            document.getElementById('successModal').classList.add('show');
+        });
+
+        // Close modal on outside click
+        document.getElementById('successModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                window.location.href = 'my-bookings.html';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turf Details - TurfHub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">TurfHub</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="turfs.html">Browse Turfs</a></li>
+                    <li><a href="my-bookings.html">My Bookings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="details-section">
+        <div class="container">
+            <a href="turfs.html" class="back-link">← Back to All Turfs</a>
+            
+            <div class="details-layout">
+                <div class="details-left">
+                    <div class="image-gallery">
+                        <div class="main-image" id="mainImage"></div>
+                        <div class="thumbnail-strip" id="thumbnails"></div>
+                    </div>
+
+                    <div class="details-info">
+                        <h1 class="details-title" id="turfName">Loading...</h1>
+                        <p class="details-location" id="turfLocation">📍 Loading...</p>
+                        
+                        <div class="details-sports" id="turfSports"></div>
+
+                        <div class="details-description">
+                            <h3>About This Turf</h3>
+                            <p id="turfDescription">Loading...</p>
+                        </div>
+
+                        <div class="details-amenities">
+                            <h3>Amenities</h3>
+                            <div class="amenities-grid" id="turfAmenities"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="details-right">
+                    <div class="booking-card">
+                        <div class="booking-price" id="bookingPrice">₹0/hr</div>
+                        
+                        <div class="booking-form">
+                            <div class="form-group">
+                                <label class="form-label">Select Date</label>
+                                <input type="date" id="bookingDate" class="form-input" min="">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Select Time Slot</label>
+                                <div class="time-slots" id="timeSlots"></div>
+                            </div>
+
+                            <div class="booking-summary" id="bookingSummary" style="display: none;">
+                                <h4>Booking Summary</h4>
+                                <div class="summary-row">
+                                    <span>Date:</span>
+                                    <span id="summaryDate">-</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Time:</span>
+                                    <span id="summaryTime">-</span>
+                                </div>
+                                <div class="summary-row summary-total">
+                                    <span>Total:</span>
+                                    <span id="summaryTotal">₹0</span>
+                                </div>
+                            </div>
+
+                            <button class="book-now-btn" id="proceedBooking" disabled>
+                                Select Date & Time
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 TurfHub. Book your game, play your heart out.</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/storage.js"></script>
+    <script>
+        let currentTurf = null;
+        let selectedDate = null;
+        let selectedTime = null;
+
+        // Get turf ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const turfId = parseInt(urlParams.get('id'));
+
+        // Find turf
+        currentTurf = turfsData.find(t => t.id === turfId);
+
+        if (!currentTurf) {
+            window.location.href = 'turfs.html';
+        }
+
+        // Render turf details
+        function renderTurfDetails() {
+            document.getElementById('turfName').textContent = currentTurf.name;
+            document.getElementById('turfLocation').textContent = `📍 ${currentTurf.location}`;
+            document.getElementById('turfDescription').textContent = currentTurf.description;
+            document.getElementById('bookingPrice').textContent = `₹${currentTurf.pricePerHour}/hr`;
+
+            // Sports
+            document.getElementById('turfSports').innerHTML = currentTurf.sports
+                .map(sport => `<span class="sport-tag sport-tag-large">${sport}</span>`)
+                .join('');
+
+            // Amenities
+            document.getElementById('turfAmenities').innerHTML = currentTurf.amenities
+                .map(amenity => `<div class="amenity-item">${amenity}</div>`)
+                .join('');
+
+            // Images
+            document.getElementById('mainImage').style.backgroundImage = `url('${currentTurf.image}')`;
+            
+            const thumbnails = currentTurf.images || [currentTurf.image];
+            document.getElementById('thumbnails').innerHTML = thumbnails
+                .map((img, i) => `<div class="thumbnail ${i === 0 ? 'active' : ''}" style="background-image: url('${img}')" data-index="${i}"></div>`)
+                .join('');
+
+            // Thumbnail click handlers
+            document.querySelectorAll('.thumbnail').forEach(thumb => {
+                thumb.addEventListener('click', function() {
+                    document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById('mainImage').style.backgroundImage = this.style.backgroundImage;
+                });
+            });
+        }
+
+        // Set min date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('bookingDate').min = today;
+        document.getElementById('bookingDate').value = today;
+
+        // Render time slots
+        function renderTimeSlots() {
+            const container = document.getElementById('timeSlots');
+            const slots = [
+                '6:00 AM - 7:00 AM',
+                '7:00 AM - 8:00 AM',
+                '8:00 AM - 9:00 AM',
+                '9:00 AM - 10:00 AM',
+                '10:00 AM - 11:00 AM',
+                '11:00 AM - 12:00 PM',
+                '12:00 PM - 1:00 PM',
+                '2:00 PM - 3:00 PM',
+                '3:00 PM - 4:00 PM',
+                '4:00 PM - 5:00 PM',
+                '5:00 PM - 6:00 PM',
+                '6:00 PM - 7:00 PM',
+                '7:00 PM - 8:00 PM',
+                '8:00 PM - 9:00 PM',
+                '9:00 PM - 10:00 PM'
+            ];
+
+            const selectedDateValue = document.getElementById('bookingDate').value;
+            const bookings = getBookingsForDateAndTurf(selectedDateValue, currentTurf.id);
+
+            container.innerHTML = slots.map(slot => {
+                const isBooked = bookings.some(b => b.time === slot);
+                return `
+                    <button class="time-slot ${isBooked ? 'booked' : ''}" 
+                            data-time="${slot}"
+                            ${isBooked ? 'disabled' : ''}>
+                        ${slot}
+                        ${isBooked ? '<span class="booked-tag">Booked</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+
+            // Add click handlers to available slots
+            document.querySelectorAll('.time-slot:not(.booked)').forEach(slot => {
+                slot.addEventListener('click', function() {
+                    document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedTime = this.dataset.time;
+                    updateBookingSummary();
+                });
+            });
+        }
+
+        // Update booking summary
+        function updateBookingSummary() {
+            selectedDate = document.getElementById('bookingDate').value;
+            
+            if (selectedDate && selectedTime) {
+                document.getElementById('bookingSummary').style.display = 'block';
+                document.getElementById('summaryDate').textContent = new Date(selectedDate).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                document.getElementById('summaryTime').textContent = selectedTime;
+                document.getElementById('summaryTotal').textContent = `₹${currentTurf.pricePerHour}`;
+                document.getElementById('proceedBooking').disabled = false;
+                document.getElementById('proceedBooking').textContent = 'Proceed to Book';
+            } else {
+                document.getElementById('bookingSummary').style.display = 'none';
+                document.getElementById('proceedBooking').disabled = true;
+                document.getElementById('proceedBooking').textContent = 'Select Date & Time';
+            }
+        }
+
+        // Date change handler
+        document.getElementById('bookingDate').addEventListener('change', function() {
+            selectedTime = null;
+            renderTimeSlots();
+            updateBookingSummary();
+        });
+
+        // Proceed to booking
+        document.getElementById('proceedBooking').addEventListener('click', function() {
+            if (selectedDate && selectedTime) {
+                const bookingData = {
+                    turfId: currentTurf.id,
+                    turfName: currentTurf.name,
+                    date: selectedDate,
+                    time: selectedTime,
+                    pricePerHour: currentTurf.pricePerHour
+                };
+                
+                // Store in session for booking page
+                sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+                window.location.href = 'booking.html';
+            }
+        });
+
+        // Initialize
+        renderTurfDetails();
+        renderTimeSlots();
+    </script>
+</body>
+</html>
