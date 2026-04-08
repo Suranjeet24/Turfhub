@@ -108,11 +108,12 @@ const updateBooking = async (req, res) => {
         }
 
         const allowedStatuses = ['pending', 'confirmed', 'cancelled'];
-        const newStatus = allowedStatuses.includes(req.body.status) ? req.body.status : 'cancelled';
+        const requestedStatus = String(req.body.status);
+        const newStatus = allowedStatuses.includes(requestedStatus) ? requestedStatus : 'cancelled';
 
         const updatedBooking = await Booking.findByIdAndUpdate(
             req.params.id,
-            { status: newStatus },
+            { $set: { status: newStatus } },
             { new: true }
         ).populate('turfId', 'name location');
 

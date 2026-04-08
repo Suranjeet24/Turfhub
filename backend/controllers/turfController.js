@@ -109,11 +109,11 @@ const updateTurf = async (req, res) => {
         if (description !== undefined) updateData.description = String(description);
         if (location !== undefined) updateData.location = String(location);
         if (city !== undefined) updateData.city = String(city);
-        if (sports !== undefined) updateData.sports = sports;
+        if (sports !== undefined) updateData.sports = Array.isArray(sports) ? sports.map(s => String(s)) : [];
         if (pricePerHour !== undefined) updateData.pricePerHour = Number(pricePerHour);
         if (image !== undefined) updateData.image = String(image);
-        if (images !== undefined) updateData.images = images;
-        if (amenities !== undefined) updateData.amenities = amenities;
+        if (images !== undefined) updateData.images = Array.isArray(images) ? images.map(i => String(i)) : [];
+        if (amenities !== undefined) updateData.amenities = Array.isArray(amenities) ? amenities.map(a => String(a)) : [];
         if (status !== undefined) {
             if (!['active', 'inactive'].includes(status)) {
                 return res.status(400).json({ success: false, message: 'Invalid status value' });
@@ -121,7 +121,7 @@ const updateTurf = async (req, res) => {
             updateData.status = status;
         }
 
-        const turf = await Turf.findByIdAndUpdate(req.params.id, updateData, {
+        const turf = await Turf.findByIdAndUpdate(req.params.id, { $set: updateData }, {
             new: true,
             runValidators: true
         });
