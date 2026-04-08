@@ -129,6 +129,8 @@
         </div>
     </footer>
 
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
     <script src="js/storage.js"></script>
     <script>
@@ -137,7 +139,7 @@
 
         // Get pending booking from session
         const pendingBooking = sessionStorage.getItem('pendingBooking');
-        
+
         if (!pendingBooking) {
             window.location.href = 'index.html';
         } else {
@@ -147,23 +149,31 @@
 
         function loadBookingDetails() {
             document.getElementById('bookingTurfName').textContent = bookingData.turfName;
-            
+
             const dateObj = new Date(bookingData.date);
             document.getElementById('bookingDate').textContent = dateObj.toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
             });
-            
+
             document.getElementById('bookingTime').textContent = bookingData.time;
-            
+
+            // Pre-fill user info if logged in
+            const user = Auth.getUser();
+            if (user) {
+                document.getElementById('userName').value = user.name || '';
+                document.getElementById('userPhone').value = user.phone || '';
+                document.getElementById('userEmail').value = user.email || '';
+            }
+
             updateSummary();
         }
 
         function updateSummary() {
             document.getElementById('summaryPricePerHour').textContent = `₹${bookingData.pricePerHour}`;
             document.getElementById('summaryDuration').textContent = `${selectedDuration} hour${selectedDuration > 1 ? 's' : ''}`;
-            
+
             const totalAmount = bookingData.pricePerHour * selectedDuration;
             document.getElementById('summaryTotalAmount').textContent = `₹${totalAmount}`;
         }
@@ -179,7 +189,7 @@
         });
 
         // Confirm booking
-        document.getElementById('confirmBooking').addEventListener('click', function() {
+        document.getElementById('confirmBooking').addEventListener('click', async function() {
             const userName = document.getElementById('userName').value.trim();
             const userPhone = document.getElementById('userPhone').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim();
@@ -189,7 +199,39 @@
                 return;
             }
 
-            // Create booking object
+            const confirmBtn = document.getElementById('confirmBooking');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Confirming...';
+
+            // Try backend API if user is logged in and it's an API turf
+            if (Auth.isLoggedIn() && bookingData.isApiTurf) {
+                try {
+                    await BookingsAPI.create({
+                        turfId: bookingData.turfId,
+                        date: bookingData.date,
+                        time: bookingData.time,
+                        duration: selectedDuration,
+                        userDetails: {
+                            name: userName,
+                            phone: userPhone,
+                            email: userEmail
+                        }
+                    });
+
+                    sessionStorage.removeItem('pendingBooking');
+                    document.getElementById('successModal').classList.add('show');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm Booking';
+                    return;
+                } catch (error) {
+                    alert(error.message || 'Booking failed. Please try again.');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm Booking';
+                    return;
+                }
+            }
+
+            // Fall back to localStorage
             const booking = {
                 id: Date.now(),
                 turfId: bookingData.turfId,
@@ -205,14 +247,11 @@
                 bookedAt: new Date().toISOString()
             };
 
-            // Save booking
             saveBooking(booking);
-
-            // Clear session
             sessionStorage.removeItem('pendingBooking');
-
-            // Show success modal
             document.getElementById('successModal').classList.add('show');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Booking';
         });
 
         // Close modal on outside click

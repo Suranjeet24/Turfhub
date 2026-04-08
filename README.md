@@ -1,276 +1,157 @@
 # 🎾 TurfHub - Turf Booking Platform
 
-A complete, production-ready front-end MVP for a turf booking platform. Users can browse turfs, select time slots, and book them with full booking logic handled using JavaScript and LocalStorage.
+A full-stack turf booking platform with a Node.js/Express/MongoDB backend and a vanilla JS frontend. Users can browse turfs, select time slots, create accounts, and book — with data persisted in MongoDB. The frontend falls back to LocalStorage when the backend is unavailable.
 
 ## 🚀 Features
 
 ### ✅ Core Functionality
 - **Browse Turfs**: View all available turfs with filtering and search
 - **Turf Details**: See detailed information, amenities, and available time slots
-- **Slot Booking**: Real-time slot availability with booking prevention
+- **Slot Booking**: Real-time slot availability with booking conflict prevention
 - **Price Calculation**: Dynamic pricing based on duration (hours)
 - **My Bookings**: View and manage all your bookings
-- **LocalStorage**: All data persists across sessions
-
-### 🎨 UI/UX Features
-- Modern, sports-themed design with neon green accents
-- Smooth animations and hover effects
-- Sticky navigation bar
-- Responsive mobile-friendly design
-- Active slot button highlighting
-- Success confirmation modals
-- Empty states for better UX
-
-### 💡 Advanced Features
-- **Smart Filtering**: Filter by sport, price range, and turf name
-- **Double Booking Prevention**: Booked slots are automatically disabled
-- **Duration Selection**: Choose 1, 2, or 3 hour bookings
-- **Date Picker**: Book slots for any future date
-- **Booking Management**: Cancel upcoming bookings
-- **Status Indicators**: Upcoming vs completed bookings
+- **User Auth**: JWT-based register/login, with navbar updating on auth state
+- **LocalStorage fallback**: All pages work without the backend running
 
 ## 📁 Project Structure
 
 ```
-turf-booking/
-│
-├── index.html              # Home page with hero & popular turfs
-├── turfs.html             # Listing page with filters
-├── turf-details.html      # Individual turf details & slot selection
-├── booking.html           # Complete booking with user info
-├── my-bookings.html       # View and manage bookings
+TurfHub/
+├── index.html              # Home page
+├── turfs.html              # Listing page with filters
+├── turf-details.html       # Individual turf details & slot selection
+├── booking.html            # Complete booking with user info
+├── my-bookings.html        # View and manage bookings
+├── login.html              # Login page
+├── signup.html             # Sign up page
+├── Dockerfile              # Docker image for backend
+├── docker-compose.yml      # Docker Compose (MongoDB + backend)
 │
 ├── css/
-│   └── style.css          # Complete styling with animations
+│   └── style.css           # Styles including auth page styles
 │
 ├── js/
-│   ├── data.js           # Sample turf data (12 turfs)
-│   └── storage.js        # LocalStorage management functions
+│   ├── api.js              # API client (AuthAPI, TurfsAPI, BookingsAPI)
+│   ├── auth.js             # Auth state management + navbar update
+│   ├── data.js             # Static turf data (fallback)
+│   └── storage.js          # LocalStorage utilities (fallback)
 │
-└── README.md             # This file
+└── backend/
+    ├── server.js           # Express app entry point
+    ├── seed.js             # Database seeder (turfs + demo users)
+    ├── package.json
+    ├── .env.example
+    ├── config/
+    │   └── database.js     # Mongoose connection
+    ├── models/
+    │   ├── User.js
+    │   ├── Turf.js
+    │   ├── Booking.js
+    │   └── TimeSlot.js
+    ├── middleware/
+    │   ├── auth.js         # JWT protect + adminOnly middleware
+    │   └── validation.js   # Joi request validation
+    ├── controllers/
+    │   ├── authController.js
+    │   ├── turfController.js
+    │   ├── bookingController.js
+    │   └── adminController.js
+    └── routes/
+        ├── auth.js
+        ├── turfs.js
+        ├── bookings.js
+        └── admin.js
 ```
 
-## 🎯 Key Pages
+## 🛠️ Backend Setup
 
-### 1️⃣ **Home Page** (index.html)
-- Hero section with location search
-- Sports category cards (Cricket, Football, Badminton, Tennis)
-- Popular turfs grid with booking cards
-- Each card shows: image, name, location, price, sports, book button
+### Prerequisites
+- Node.js 18+
+- MongoDB running locally (or use Docker)
 
-### 2️⃣ **Turf Listing Page** (turfs.html)
-- Advanced filtering sidebar (by sport, price, name)
-- Responsive grid layout
-- Real-time filtering with DOM manipulation
-- Results counter
-- Empty state handling
+### Local Setup
 
-### 3️⃣ **Turf Details Page** (turf-details.html)
-- Image gallery with thumbnails
-- Detailed turf information and amenities
-- Date picker (min: today)
-- Time slot selection (6 AM - 10 PM)
-- Disabled booked slots with visual indicators
-- Booking summary card
-- Sticky booking panel
-
-### 4️⃣ **Booking Page** (booking.html)
-- Complete booking details
-- User information form (name, phone, email)
-- Duration selector (1hr/2hr/3hr)
-- Price calculation: `Total = Price per hour × Hours`
-- Booking summary with total amount
-- Success modal with navigation options
-
-### 5️⃣ **My Bookings Page** (my-bookings.html)
-- List all bookings (sorted by date)
-- Status badges (Upcoming/Completed)
-- Detailed booking information
-- Cancel booking functionality
-- Empty state for new users
-
-## 🔥 Booking Logic
-
-### Slot Management
-```javascript
-// Check if slot is booked
-function getBookingsForDateAndTurf(date, turfId) {
-    const bookings = getAllBookings();
-    return bookings.filter(b => b.date === date && b.turfId === turfId);
-}
-
-// Prevent double booking
-const isBooked = bookings.some(b => b.time === slot);
-```
-
-### Price Calculation
-```javascript
-const totalAmount = pricePerHour × selectedDuration;
-```
-
-### LocalStorage Structure
-```javascript
-{
-    id: 1706543210789,
-    turfId: 1,
-    turfName: "GreenField Arena",
-    date: "2026-02-10",
-    time: "6:00 PM - 7:00 PM",
-    duration: 2,
-    pricePerHour: 800,
-    totalAmount: 1600,
-    userName: "John Doe",
-    userPhone: "9876543210",
-    userEmail: "john@example.com",
-    bookedAt: "2026-01-28T10:30:00.000Z"
-}
-```
-
-## 🎨 Design Features
-
-### Color Scheme
-- **Primary**: Neon Green (#00ff88)
-- **Secondary**: Pink Red (#ff3366)
-- **Background**: Dark Navy (#0a0e27)
-- **Cards**: Dark Blue (#1a1f3a)
-
-### Typography
-- **Display**: Righteous (headings, logo)
-- **Body**: Outfit (all other text)
-
-### Animations
-- Fade in on scroll
-- Hover effects on cards
-- Button press animations
-- Modal slide-up effects
-- Pulse animations on icons
-
-### Responsive Breakpoints
-- Desktop: 1024px+
-- Tablet: 768px - 1024px
-- Mobile: < 768px
-
-## 🛠️ Technical Implementation
-
-### JavaScript Features Used
-- DOM Manipulation
-- Event Handling
-- LocalStorage API
-- Date Handling
-- Array Methods (filter, map, find, some)
-- URL Parameters (URLSearchParams)
-- Session Storage (for booking flow)
-
-### CSS Features Used
-- CSS Grid & Flexbox
-- CSS Variables
-- Keyframe Animations
-- Transitions
-- Backdrop Filter
-- Gradient Text
-- Sticky Positioning
-
-## 🚀 Getting Started
-
-### Option 1: Direct Opening
-1. Extract the folder
-2. Open `index.html` in any modern browser
-3. Start booking!
-
-### Option 2: Local Server (Recommended)
 ```bash
-# Using Python
-python -m http.server 8000
-
-# Using Node.js
-npx serve
-
-# Using VS Code
-# Install "Live Server" extension and click "Go Live"
+cd backend
+cp .env.example .env
+# Edit .env and set MONGODB_URI, JWT_SECRET, etc.
+npm install
+npm run seed    # Seeds turfs + creates demo users
+npm start       # Starts on port 5000
 ```
 
-Then visit: `http://localhost:8000`
+### Demo credentials (after seeding)
+| Role  | Email               | Password   |
+|-------|---------------------|------------|
+| Admin | admin@turfhub.com   | Admin@123  |
+| User  | user@turfhub.com    | User@123   |
 
-## 💼 Interview Talking Points
+### Docker Setup
 
-**"This is a front-end MVP of a turf booking platform with real-world e-commerce flow."**
+```bash
+docker-compose up -d
+# Backend: http://localhost:5000
+# MongoDB: localhost:27017
+```
 
-### Key Technical Highlights:
-1. **Real Booking Logic**: Slot availability, double booking prevention
-2. **State Management**: Complete LocalStorage implementation
-3. **DOM Manipulation**: Dynamic rendering based on filters
-4. **User Flow**: 5-page booking journey from search to confirmation
-5. **Price Calculation**: Dynamic pricing based on user selection
-6. **Data Persistence**: Bookings survive page refreshes
-7. **Responsive Design**: Works on all devices
-8. **Clean Code**: Modular JavaScript with separate concerns
+To seed the database when using Docker:
+```bash
+docker exec -it turfhub-backend node seed.js
+```
 
-### Business Problem Solved:
-Sports facility booking is a common real-world problem. This platform:
-- Reduces phone bookings
-- Prevents double bookings
-- Shows real-time availability
-- Provides booking history
-- Enables online payments (UI ready)
+## 🌐 API Endpoints
 
-### Skills Demonstrated:
-✅ JavaScript (ES6+)  
-✅ DOM Manipulation  
-✅ LocalStorage API  
-✅ Responsive CSS  
-✅ UX/UI Design  
-✅ Project Organization  
-✅ Real-world Problem Solving  
+### Auth
+| Method | Endpoint            | Auth | Description          |
+|--------|---------------------|------|----------------------|
+| POST   | /api/auth/register  | No   | Register user        |
+| POST   | /api/auth/login     | No   | Login                |
+| POST   | /api/auth/logout    | Yes  | Logout               |
+| GET    | /api/auth/profile   | Yes  | Get profile          |
 
-## 🎯 Future Enhancements
+### Turfs
+| Method | Endpoint              | Auth  | Description          |
+|--------|-----------------------|-------|----------------------|
+| GET    | /api/turfs            | No    | List all turfs       |
+| GET    | /api/turfs/:id        | No    | Get single turf      |
+| GET    | /api/turfs/:id/slots  | No    | Get slots for date   |
+| POST   | /api/turfs            | Admin | Create turf          |
+| PUT    | /api/turfs/:id        | Admin | Update turf          |
+| DELETE | /api/turfs/:id        | Admin | Delete turf          |
 
-### Easy Additions:
-- [ ] Login/Signup UI (no backend)
-- [ ] Dark mode toggle
-- [ ] Location dropdown with auto-complete
-- [ ] Booking success animation (confetti)
-- [ ] Fake payment screen
-- [ ] Print booking receipt
-- [ ] Share booking via WhatsApp
+### Bookings
+| Method | Endpoint         | Auth | Description          |
+|--------|------------------|------|----------------------|
+| POST   | /api/bookings    | Yes  | Create booking       |
+| GET    | /api/bookings    | Yes  | Get my bookings      |
+| GET    | /api/bookings/:id| Yes  | Get single booking   |
+| PUT    | /api/bookings/:id| Yes  | Cancel booking       |
+| DELETE | /api/bookings/:id| Yes  | Delete booking       |
 
-### Advanced Features:
-- [ ] User reviews and ratings
-- [ ] Photo upload for turfs
-- [ ] Calendar view for bookings
-- [ ] Email notifications (UI only)
-- [ ] Discount codes
-- [ ] Recurring bookings
-- [ ] Team tournaments
+### Admin
+| Method | Endpoint              | Auth  | Description          |
+|--------|-----------------------|-------|----------------------|
+| GET    | /api/admin/stats      | Admin | Dashboard stats      |
+| GET    | /api/admin/bookings   | Admin | All bookings         |
 
-## 📱 Screenshots
+## 🔧 Frontend Integration
 
-All pages are fully functional and can be tested by:
-1. Opening index.html
-2. Browsing turfs
-3. Selecting a turf
-4. Choosing date and time
-5. Completing booking
-6. Viewing in "My Bookings"
+- `js/api.js` — API client with `AuthAPI`, `TurfsAPI`, `BookingsAPI`, `AdminAPI`
+- `js/auth.js` — `Auth` object for session management; `updateNavbar()` adds login/logout/user greeting dynamically
+- All pages include `api.js` and `auth.js` before existing scripts
+- **Graceful fallback**: if the backend is unreachable, all pages continue to use static data + LocalStorage
 
-## 🏆 Why This Project Stands Out
+## 🚀 Getting Started (Frontend Only)
 
-1. **Complete User Journey**: Not just a landing page, but a full booking flow
-2. **Real Logic**: Actual booking prevention and state management
-3. **Professional UI**: Modern, polished design that looks production-ready
-4. **Best Practices**: Clean code structure, modular approach
-5. **Attention to Detail**: Loading states, empty states, error handling
-6. **Industry Standard**: Similar to real booking platforms (Playo, HudHud)
+Open `index.html` in any modern browser — no server required.
 
-## 📝 Credits
-
-Built as a front-end portfolio project demonstrating:
-- Modern web development practices
-- User-centric design
-- Real-world problem solving
-- Production-ready code quality
+```bash
+# Or use a local dev server
+python -m http.server 8000
+# Visit http://localhost:8000
+```
 
 ---
 
-**Happy Booking! 🎾⚽🏸**
+Built with ❤️ — Node.js · Express · MongoDB · Vanilla JS
 
-Built with ❤️ and lots of JavaScript

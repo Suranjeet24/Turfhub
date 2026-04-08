@@ -60,12 +60,98 @@
         </div>
     </footer>
 
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
     <script src="js/storage.js"></script>
     <script>
         let bookingToCancel = null;
+        let apiBookings = null;
 
-        function renderBookings() {
+        // Attempt to load bookings from API, fall back to localStorage
+        async function loadAndRenderBookings() {
+            if (Auth.isLoggedIn()) {
+                try {
+                    const result = await BookingsAPI.getMyBookings();
+                    apiBookings = result.bookings;
+                    renderApiBookings(apiBookings);
+                    return;
+                } catch (e) {
+                    // Fall through to localStorage
+                }
+            }
+            renderLocalBookings();
+        }
+
+        function renderApiBookings(bookings) {
+            const container = document.getElementById('bookingsContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (!bookings || bookings.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = bookings.map((booking, index) => {
+                const bookingDate = new Date(booking.date);
+                const isPast = bookingDate < new Date();
+                const isCancelled = booking.status === 'cancelled';
+                const turfName = booking.turfId ? booking.turfId.name : 'Unknown Turf';
+
+                return `
+                    <div class="booking-card-item" style="animation-delay: ${index * 0.05}s">
+                        <div class="booking-card-header">
+                            <h3 class="booking-turf-name">${turfName}</h3>
+                            <span class="booking-status ${isCancelled ? 'status-cancelled' : isPast ? 'status-completed' : 'status-upcoming'}">
+                                ${isCancelled ? '✗ Cancelled' : isPast ? '✓ Completed' : '⏰ Upcoming'}
+                            </span>
+                        </div>
+
+                        <div class="booking-card-body">
+                            <div class="booking-info-grid">
+                                <div class="booking-info-item">
+                                    <span class="info-label">📅 Date</span>
+                                    <span class="info-value">${bookingDate.toLocaleDateString('en-IN', {
+                                        day: 'numeric', month: 'short', year: 'numeric'
+                                    })}</span>
+                                </div>
+                                <div class="booking-info-item">
+                                    <span class="info-label">⏰ Time</span>
+                                    <span class="info-value">${booking.time}</span>
+                                </div>
+                                <div class="booking-info-item">
+                                    <span class="info-label">⏱️ Duration</span>
+                                    <span class="info-value">${booking.duration} hour${booking.duration > 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="booking-info-item">
+                                    <span class="info-label">💰 Total</span>
+                                    <span class="info-value">₹${booking.totalAmount}</span>
+                                </div>
+                            </div>
+
+                            <div class="booking-user-info">
+                                <div><strong>Name:</strong> ${booking.userDetails.name}</div>
+                                <div><strong>Phone:</strong> ${booking.userDetails.phone}</div>
+                                ${booking.userDetails.email ? `<div><strong>Email:</strong> ${booking.userDetails.email}</div>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="booking-card-footer">
+                            <span class="booking-id">Booking ID: #${booking._id.slice(-8).toUpperCase()}</span>
+                            ${!isPast && !isCancelled ? `<button class="cancel-booking-btn" data-id="${booking._id}" data-type="api">Cancel Booking</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            attachCancelHandlers();
+        }
+
+        function renderLocalBookings() {
             const bookings = getAllBookings();
             const container = document.getElementById('bookingsContainer');
             const emptyState = document.getElementById('emptyState');
@@ -79,13 +165,12 @@
             container.style.display = 'grid';
             emptyState.style.display = 'none';
 
-            // Sort bookings by date (most recent first)
             bookings.sort((a, b) => new Date(b.bookedAt) - new Date(a.bookedAt));
 
             container.innerHTML = bookings.map((booking, index) => {
                 const bookingDate = new Date(booking.date);
                 const isPast = bookingDate < new Date();
-                
+
                 return `
                     <div class="booking-card-item" style="animation-delay: ${index * 0.05}s">
                         <div class="booking-card-header">
@@ -94,28 +179,23 @@
                                 ${isPast ? '✓ Completed' : '⏰ Upcoming'}
                             </span>
                         </div>
-                        
+
                         <div class="booking-card-body">
                             <div class="booking-info-grid">
                                 <div class="booking-info-item">
                                     <span class="info-label">📅 Date</span>
                                     <span class="info-value">${bookingDate.toLocaleDateString('en-IN', {
-                                        day: 'numeric',
-                                        month: 'short',
-                                        year: 'numeric'
+                                        day: 'numeric', month: 'short', year: 'numeric'
                                     })}</span>
                                 </div>
-                                
                                 <div class="booking-info-item">
                                     <span class="info-label">⏰ Time</span>
                                     <span class="info-value">${booking.time}</span>
                                 </div>
-                                
                                 <div class="booking-info-item">
                                     <span class="info-label">⏱️ Duration</span>
                                     <span class="info-value">${booking.duration} hour${booking.duration > 1 ? 's' : ''}</span>
                                 </div>
-                                
                                 <div class="booking-info-item">
                                     <span class="info-label">💰 Total</span>
                                     <span class="info-value">₹${booking.totalAmount}</span>
@@ -128,19 +208,22 @@
                                 ${booking.userEmail ? `<div><strong>Email:</strong> ${booking.userEmail}</div>` : ''}
                             </div>
                         </div>
-                        
+
                         <div class="booking-card-footer">
                             <span class="booking-id">Booking ID: #${booking.id}</span>
-                            ${!isPast ? `<button class="cancel-booking-btn" data-id="${booking.id}">Cancel Booking</button>` : ''}
+                            ${!isPast ? `<button class="cancel-booking-btn" data-id="${booking.id}" data-type="local">Cancel Booking</button>` : ''}
                         </div>
                     </div>
                 `;
             }).join('');
 
-            // Add cancel button handlers
+            attachCancelHandlers();
+        }
+
+        function attachCancelHandlers() {
             document.querySelectorAll('.cancel-booking-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    bookingToCancel = parseInt(this.dataset.id);
+                    bookingToCancel = { id: this.dataset.id, type: this.dataset.type };
                     document.getElementById('cancelModal').classList.add('show');
                 });
             });
@@ -152,12 +235,23 @@
             bookingToCancel = null;
         });
 
-        document.getElementById('confirmCancel').addEventListener('click', function() {
-            if (bookingToCancel) {
-                deleteBooking(bookingToCancel);
+        document.getElementById('confirmCancel').addEventListener('click', async function() {
+            if (!bookingToCancel) return;
+
+            if (bookingToCancel.type === 'api') {
+                try {
+                    await BookingsAPI.cancel(bookingToCancel.id);
+                } catch (e) {
+                    alert('Failed to cancel booking: ' + e.message);
+                }
                 document.getElementById('cancelModal').classList.remove('show');
                 bookingToCancel = null;
-                renderBookings();
+                loadAndRenderBookings();
+            } else {
+                deleteBooking(parseInt(bookingToCancel.id));
+                document.getElementById('cancelModal').classList.remove('show');
+                bookingToCancel = null;
+                renderLocalBookings();
             }
         });
 
@@ -170,7 +264,7 @@
         });
 
         // Initialize
-        renderBookings();
+        loadAndRenderBookings();
     </script>
 </body>
 </html>
