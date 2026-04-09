@@ -100,6 +100,8 @@
         </div>
     </footer>
 
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/data.js"></script>
     <script src="js/storage.js"></script>
     <script>
@@ -109,13 +111,34 @@
 
         // Get turf ID from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const turfId = parseInt(urlParams.get('id'));
+        const turfIdParam = urlParams.get('id');
 
-        // Find turf
-        currentTurf = turfsData.find(t => t.id === turfId);
+        // Try to load turf from backend, fall back to static data
+        async function loadTurf() {
+            // Try backend first (MongoDB ObjectId)
+            if (turfIdParam && turfIdParam.length === 24) {
+                try {
+                    const result = await TurfsAPI.getById(turfIdParam);
+                    currentTurf = result.turf;
+                    currentTurf._isApiTurf = true;
+                    renderTurfDetails();
+                    renderTimeSlots();
+                    return;
+                } catch (e) {
+                    // Fall through to static data
+                }
+            }
 
-        if (!currentTurf) {
-            window.location.href = 'turfs.html';
+            // Fall back to static data (numeric id)
+            const turfId = parseInt(turfIdParam);
+            currentTurf = turfsData.find(t => t.id === turfId);
+
+            if (!currentTurf) {
+                window.location.href = 'turfs.html';
+                return;
+            }
+            renderTurfDetails();
+            renderTimeSlots();
         }
 
         // Render turf details
@@ -137,7 +160,7 @@
 
             // Images
             document.getElementById('mainImage').style.backgroundImage = `url('${currentTurf.image}')`;
-            
+
             const thumbnails = currentTurf.images || [currentTurf.image];
             document.getElementById('thumbnails').innerHTML = thumbnails
                 .map((img, i) => `<div class="thumbnail ${i === 0 ? 'active' : ''}" style="background-image: url('${img}')" data-index="${i}"></div>`)
@@ -158,38 +181,43 @@
         document.getElementById('bookingDate').min = today;
         document.getElementById('bookingDate').value = today;
 
-        // Render time slots
-        function renderTimeSlots() {
+        // Render time slots - tries backend API, falls back to localStorage
+        async function renderTimeSlots() {
             const container = document.getElementById('timeSlots');
-            const slots = [
-                '6:00 AM - 7:00 AM',
-                '7:00 AM - 8:00 AM',
-                '8:00 AM - 9:00 AM',
-                '9:00 AM - 10:00 AM',
-                '10:00 AM - 11:00 AM',
-                '11:00 AM - 12:00 PM',
-                '12:00 PM - 1:00 PM',
-                '2:00 PM - 3:00 PM',
-                '3:00 PM - 4:00 PM',
-                '4:00 PM - 5:00 PM',
-                '5:00 PM - 6:00 PM',
-                '6:00 PM - 7:00 PM',
-                '7:00 PM - 8:00 PM',
-                '8:00 PM - 9:00 PM',
-                '9:00 PM - 10:00 PM'
+            const selectedDateValue = document.getElementById('bookingDate').value;
+
+            const allSlots = [
+                '6:00 AM - 7:00 AM', '7:00 AM - 8:00 AM', '8:00 AM - 9:00 AM',
+                '9:00 AM - 10:00 AM', '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM',
+                '12:00 PM - 1:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM',
+                '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM', '6:00 PM - 7:00 PM',
+                '7:00 PM - 8:00 PM', '8:00 PM - 9:00 PM', '9:00 PM - 10:00 PM'
             ];
 
-            const selectedDateValue = document.getElementById('bookingDate').value;
-            const bookings = getBookingsForDateAndTurf(selectedDateValue, currentTurf.id);
+            let slots = allSlots.map(s => ({ time: s, isBooked: false }));
+
+            if (currentTurf._isApiTurf) {
+                try {
+                    const result = await TurfsAPI.getSlots(currentTurf._id, selectedDateValue);
+                    slots = result.slots;
+                } catch (e) {
+                    // Use default slots if API fails
+                }
+            } else {
+                const bookings = getBookingsForDateAndTurf(selectedDateValue, currentTurf.id);
+                slots = allSlots.map(slot => ({
+                    time: slot,
+                    isBooked: bookings.some(b => b.time === slot)
+                }));
+            }
 
             container.innerHTML = slots.map(slot => {
-                const isBooked = bookings.some(b => b.time === slot);
                 return `
-                    <button class="time-slot ${isBooked ? 'booked' : ''}" 
-                            data-time="${slot}"
-                            ${isBooked ? 'disabled' : ''}>
-                        ${slot}
-                        ${isBooked ? '<span class="booked-tag">Booked</span>' : ''}
+                    <button class="time-slot ${slot.isBooked ? 'booked' : ''}"
+                            data-time="${slot.time}"
+                            ${slot.isBooked ? 'disabled' : ''}>
+                        ${slot.time}
+                        ${slot.isBooked ? '<span class="booked-tag">Booked</span>' : ''}
                     </button>
                 `;
             }).join('');
@@ -208,7 +236,7 @@
         // Update booking summary
         function updateBookingSummary() {
             selectedDate = document.getElementById('bookingDate').value;
-            
+
             if (selectedDate && selectedTime) {
                 document.getElementById('bookingSummary').style.display = 'block';
                 document.getElementById('summaryDate').textContent = new Date(selectedDate).toLocaleDateString('en-IN', {
@@ -238,22 +266,21 @@
         document.getElementById('proceedBooking').addEventListener('click', function() {
             if (selectedDate && selectedTime) {
                 const bookingData = {
-                    turfId: currentTurf.id,
+                    turfId: currentTurf._id || currentTurf.id,
                     turfName: currentTurf.name,
                     date: selectedDate,
                     time: selectedTime,
-                    pricePerHour: currentTurf.pricePerHour
+                    pricePerHour: currentTurf.pricePerHour,
+                    isApiTurf: !!currentTurf._isApiTurf
                 };
-                
-                // Store in session for booking page
+
                 sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
                 window.location.href = 'booking.html';
             }
         });
 
         // Initialize
-        renderTurfDetails();
-        renderTimeSlots();
+        loadTurf();
     </script>
 </body>
 </html>
